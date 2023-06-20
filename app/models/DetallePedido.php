@@ -154,13 +154,14 @@ class DetallePedido
         }
     }
     
-    public  function ToDetallePedido($pedidoId, $tiempoInicial, $estado, $productoId, $cantidad)
+    public  function ToDetallePedido($pedidoId, $empleadoId, $tiempoInicial, $estado, $productoId, $cantidad)
     {
             $this->productoId = $productoId;
             $this->cantidad = $cantidad;
             $this->estadoId = $estado;
             $this->tiempoInicial = $tiempoInicial;
             $this->pedidoId = $pedidoId;
+            $this->empleadoId = $empleadoId;
     }
 
     

@@ -5,13 +5,14 @@ require_once './models/DetallePedido.php';
 require_once './Utilities/EstadoPedidoDetalleEnum.php';
 require_once './Utilities/EstadoMesaEnum.php';
 require_once './Utilities/PerfilUsuarioEnum.php';
-
+require_once '/xampp/htdocs/La_Comanda/Views/pedidoDashboardView.php';
+require_once '/xampp/htdocs/La_Comanda/Views/mozoPedidoView.php';
 
 
 
 class PedidoController extends Pedido implements IApiUsable
 {
-  
+  public  $path = "cross/archivos/";
     public function CargarUno($request, $response, $args)
     {
         date_default_timezone_set("America/Argentina/Buenos_Aires");
@@ -20,6 +21,7 @@ class PedidoController extends Pedido implements IApiUsable
         $mesaId = $parametros['mesaId'];
         $nombreCliente = $parametros['nombreCliente'];
         $productos = $parametros['productos'];
+        $cantidad = $parametros['cantidad'];
         try
         {
           Mesa::ModificarEstado(EstadoMesaEnum::esperandoPedido, $mesaId);
@@ -43,20 +45,23 @@ class PedidoController extends Pedido implements IApiUsable
         }
        
         $mensaje = "";
+       
         foreach($productos as $producto)
         {
             $pedidoDetalle = new DetallePedido();
 
             $productoString = json_encode($producto);
             $decodedProducto = json_decode($productoString);
-            var_dump($decodedProducto);
+
             
             $productoDb = Producto::ObtenerProducto($decodedProducto);
+            
             if($productoDb)
             {
              
+             var_dump($fecha); 
               $pedido->precio = $pedido->precio + $productoDb->precio;
-              $pedidoDetalle->ToDetallePedido(intval($ultimoIdFromPedido) , $fecha, EstadoPedidoDetalleEnum::pendiente, intval($productoDb->id) , intval($decodedProducto->cantidad) );
+              $pedidoDetalle->ToDetallePedido(intval($ultimoIdFromPedido), intval($empleadoId) , $fecha, EstadoPedidoDetalleEnum::pendiente, intval($productoDb->id) , intval($cantidad) );
               try{
                 $pedidoDetalle->crearPedidoDetalle($pedidoDetalle);
                 $mensaje = "Pedido generado con exito";
@@ -107,21 +112,109 @@ class PedidoController extends Pedido implements IApiUsable
            ->withHeader('Content-Type', 'application/json');
     }
 
+    public function ModificarEstadoPedidoDetalle($request, $response, $args)
+    {
+        $parametros = $request->getParsedBody();
+        $detallePedidoId = $parametros['detallePedidoId'];
+        $estadoId = $parametros['estadoId'];
+        try{
+          DetallePedido::ModificarEstado(EstadoPedidoDetalleEnum::listoParaServir, $detallePedidoId);
+         }
+         catch(Exception $e){
+           $error = json_encode(array("mensaje" => "Error al Actualizar el pedido: ".$e->getMessage()));
+           $response->getBody()->write($error);
+         }
 
+         $payload = json_encode(array("mensaje" => "Pedido actualizado."));
+         $response->getBody()->write($payload);
+         return $response
+           ->withHeader('Content-Type', 'application/json');
+    }
+
+    public function CancelarPedidoDetalle($request, $response, $args)
+    {
+        $parametros = $request->getParsedBody();
+        $detallePedidoId = $parametros['detallePedidoId'];
+        try{
+          DetallePedido::ModificarEstado(EstadoPedidoDetalleEnum::cancelada, $detallePedidoId);
+         }
+         catch(Exception $e){
+           $error = json_encode(array("mensaje" => "Error al Actualizar el pedido: ".$e->getMessage()));
+           $response->getBody()->write($error);
+         }
+
+         $payload = json_encode(array("mensaje" => "Pedido cancelado."));
+         $response->getBody()->write($payload);
+         return $response
+           ->withHeader('Content-Type', 'application/json');
+    }
+
+    public function CargarFoto($request, $response, $args)
+    {
+      date_default_timezone_set("America/Argentina/Buenos_Aires");
+      $parametros = $request->getParsedBody();
+       $foto = $_FILES['foto'];
+      //  $nombreCliente = $parametros['nombreCliente'];
+       $pedidoId = $parametros['pedidoId'];
+       $fecha = $fecha = date("Y/m/d");
+       $pedido = Pedido::obtenerPedido($pedidoId);
+       $pathFoto = "";
+        try{
+         $pathFoto = File::GuardarImagen($foto, $pedido->nombreCliente,  $pedidoId, $fecha);
+        }
+        catch(Exception $e){
+          $error = json_encode(array("mensaje" => "Error al guardar la imagen en el folder: ".$e->getMessage()));
+          $response->getBody()->write($error);
+        }
+
+        try
+        {
+            Pedido::AgregarFoto($pathFoto, $pedidoId);
+        }
+        catch(Exception $e){
+          $error = json_encode(array("mensaje" => "Error al guardar la imagen en la DB: ".$e->getMessage()));
+          $response->getBody()->write($error);
+          return $response;
+        }
+    }
+
+    public function EntregarPedidoDetalle($request, $response, $args)
+    {
+        $parametros = $request->getParsedBody();
+        $detallePedidoId = $parametros['detallePedidoId'];
+        $estadoId = $parametros['estadoId'];
+        try{
+          DetallePedido::EntregarPedido($estadoId, $detallePedidoId);
+         }
+         catch(Exception $e){
+           $error = json_encode(array("mensaje" => "Error al Actualizar el pedido: ".$e->getMessage()));
+           $response->getBody()->write($error);
+         }
+
+         $payload = json_encode(array("mensaje" => "Pedido entregado."));
+         $response->getBody()->write($payload);
+         return $response
+           ->withHeader('Content-Type', 'application/json');
+    }
 
     public function TraerTodos($request, $response, $args)
     {
       $empleadoId = $request->getAttribute('usuarioId');
       $perfil = $request->getAttribute('perfil');
       $lista = [];
+     
       switch($perfil)
       {
+         
         case PerfilUsuarioEnum::socio:
+           
         case PerfilUsuarioEnum::mozo:
           try{
             $lista = Pedido::obtenerTodos();
+            var_dump($lista);
             if($lista)
             {
+              
               foreach($lista as $pedido)
               {
                 $listaDetalle = DetallePedido::ObtenerFullDataPedidosDetalle($pedido->id);
@@ -201,7 +294,26 @@ class PedidoController extends Pedido implements IApiUsable
       return $lista;
     }
 
-    
+    public function DownloadCSV($request, $response, $args)
+    {
+      $filename = "pedidos-lista_".date('Y-m-d');
+      $extension = ".csv"; 
+      $listaPedidos = Pedido::CargarPedidosCSV();
+      $arrayPedidos = [];
+      $header = array('ID', 'COD PEDIDO', 'COD MESA', 'CLIENTE', 'EMAIL', 'MOZO', 'PRECIO TOTAL', 'FECHA'); 
+      foreach($listaPedidos as $pedido)
+      {   $apellido = ($pedido->apellido && $pedido->apellido != null)? $pedido->apellido : "-";
+          $nombre = ($pedido->nombre && $pedido->nombre != null)? $pedido->nombre : "-";
+          $pedido->cliente = ($nombre != "-" && $apellido != "-")? $apellido.", ".$nombre: "-";
+          $lineData = array($pedido->id, $pedido->codigoPedido,  $pedido->codigoMesa, $pedido->cliente ,
+           $pedido->emailCliente, $pedido->emailMozo, $pedido->precioTotal, strval($pedido->fecha)); 
+          array_push($arrayPedidos, $lineData);
+      }
 
-    
+      File::ArchivarSVC($header, $arrayPedidos, $this->path, $filename, $extension);
+      $mensaje = json_encode(array("mensaje" => "Descarga exitosa."));
+          $response->getBody()->write($mensaje);
+          return $response;
+    }
+
 }

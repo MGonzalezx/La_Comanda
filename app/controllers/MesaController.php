@@ -73,7 +73,38 @@ class MesaController extends Mesa implements IApiUsable
     public function ModificarUno($request, $response, $args)
     {
       
+      $parametros = $request->getParsedBody();
+
+      $pedidoId = $parametros['pedidoId'];
+      $mesaId = $parametros['mesaId'];
+      $estadoId = $parametros['estadoId'];
+      $detallesPedidoDb = DetallePedido::ObtenerFullDataPedidosDetalle($pedidoId);
+      if($detallesPedidoDb && $estadoId == EstadoMesaEnum::comiendo)
+      {
+        foreach($detallesPedidoDb as $detalle)
+        {
+            if($detalle->estadoId != EstadoPedidoDetalleEnum::entregado)
+            {
+              $error = json_encode(array("mensaje" => "El pedido ".$detalle->descripcion." aun no fué entregado. No puede modificar el estado a Comiendo"));
+              $response->getBody()->write($error);
+              return $response;
+            }
+        }
+      }
+
+      try{
+        Mesa::ModificarEstado($estadoId, $mesaId);
+        $payload = json_encode(array("lista Mesas" => "Mesa actualizada."));
+        $response->getBody()->write($payload);
+      }
+      catch(PDOException $e)
+      {
+          $error = json_encode(array("mensaje" => "Error al traer Las mesas: ".$e->getMessage()));
+          $response->getBody()->write($error);
+      }  
         
+      return $response
+        ->withHeader('Content-Type', 'application/json');
       
     }
 

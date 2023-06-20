@@ -1,6 +1,5 @@
 <?php
 require_once './Utilities/DateHelper.php';
-
 class Pedido
 {
     public $id;
@@ -39,7 +38,7 @@ class Pedido
     public static function obtenerTodos()
     {
         $hoy = DateHelper::DateAMD();
-        // var_dump($hoy);
+         var_dump($hoy);
         try{
             $objAccesoDatos = AccesoDatos::obtenerInstancia();
             $consulta = $objAccesoDatos->prepararConsulta(
@@ -50,9 +49,9 @@ class Pedido
             ORDER BY p.id, m.estado, p.fecha");
 
             $consulta->bindValue(':hoy', $hoy."%");
-
+    
             $consulta->execute();
-            return $consulta->fetchAll(PDO::FETCH_CLASS, 'PedidoDashboardView');
+            return  $consulta->fetchAll(PDO::FETCH_CLASS, 'PedidoDashboardView');
         }
         catch(PDOException $e)
         {
@@ -60,6 +59,45 @@ class Pedido
         }
     }
 
+    public static function ObtenerPedido($pedidoId)
+    {
+        $objAccesoDatos = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT * FROM pedidos 
+        
+        WHERE pedidoId = :pedidoId");
+        $consulta->bindValue(':pedidoId', $pedidoId, PDO::PARAM_INT);
+        $consulta->execute();
+
+        return $consulta->fetchObject('Pedido');
+    }
+
+    public static function AgregarFoto($foto, $id)
+    {
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("UPDATE pedidos SET foto = :foto  WHERE id = :id");
+        $consulta->bindValue(':foto', $foto, PDO::PARAM_STR);
+        $consulta->bindValue(':id', $id, PDO::PARAM_INT);
+        $consulta->execute();
+    }
+
+    public static function ObtenerTodosDetalle()
+    {
+
+        try{
+            $objAccesoDatos = AccesoDatos::obtenerInstancia();
+            $consulta = $objAccesoDatos->prepararConsulta("SELECT p.id, p.codigo as codigoPedido, m.codigo as codigoMesa, c.nombre, c.apellido, c.email as emailCliente, u.usuario as emailMozo, p.precio, p.fecha   FROM pedidos p
+            INNER JOIN usuarios u on u.id = p.empleadoId
+            INNER JOIN clientes c on c.id = p.clienteId
+            INNER JOIN mesas m on m.id = p.mesaId
+            ORDER BY fecha");
+            $consulta->execute();
+            return $consulta->fetchAll(PDO::FETCH_CLASS, 'PedidoDetalleCSV');
+        }
+        catch(PDOException $e)
+        {
+            throw $e;
+        }
+    }
     
     
     public  function ToPedido($mesaId, $empleadoId, $nombreCliente, $fecha)
@@ -83,7 +121,15 @@ class Pedido
         $this->codigo = substr(str_shuffle($permitted_chars), 0, 5);
     }
 
-   
+    public static function CargarPedidosCSV()
+    {
+       $listaPedidos =  Pedido::obtenerTodosDetalle();
+       
+       return $listaPedidos;
+
+    }
+
+    
 
     
 }
