@@ -97,7 +97,7 @@ class File
 
     public static function GuardarImagen($imagen, $nombreCliente, $pedido, $fecha)
     {
-        $userName = explode("@", $nombreCliente);
+        $userName = strtok($nombreCliente, "@");
        
         if(strlen($imagen["name"] > 0))
         {
@@ -106,9 +106,9 @@ class File
             if(File::VerificarExtension($extension))
             {
                 $fechaStr = str_replace('/', '-', $fecha);
-
-                $imagen["name"] = $nombreCliente."-".$pedido."-".$fechaStr.".".$extension;
-                $moveTo = $_SERVER['DOCUMENT_ROOT']."\cross\imagenesDeLaVenta\\";
+               
+                $imagen["name"] = $userName."-".$pedido."-".$fechaStr.".".$extension;
+                $moveTo = $_SERVER['DOCUMENT_ROOT']."/La_Comanda/app/Utilities/imagenesDeLaVenta/";
                 move_uploaded_file($imagen["tmp_name"], $moveTo.$imagen["name"]);
                 $fullPath =  $moveTo.$imagen["name"].$imagen["tmp_name"];
                 return  $fullPath;
@@ -123,7 +123,7 @@ class File
         $extension = pathinfo($imagen["name"], PATHINFO_EXTENSION);
         $fechaStr = str_replace('/', '-', $fecha);
         $imagen["name"] = $nombre."-".$nombreOtro."-".$fechaStr.".".$extension;
-        $moveTo = $_SERVER['DOCUMENT_ROOT']."\cross\imagenes\\";
+        $moveTo = $_SERVER['DOCUMENT_ROOT']."\Utilities\imagenes\\";
         $fullPath =  $moveTo.$imagen["name"];
 
        if($oldPath == null)
@@ -143,7 +143,7 @@ class File
        {
 
 
-            $moveOldImageTo = $_SERVER['DOCUMENT_ROOT']."\cross\backup\\";
+            $moveOldImageTo = $_SERVER['DOCUMENT_ROOT']."\Utilities\backup\\";
             $bkFullPath =  $moveOldImageTo."bk_".$imagen["name"];
             rename($oldPath, $bkFullPath);
             move_uploaded_file($imagen["tmp_name"], $fullPath);

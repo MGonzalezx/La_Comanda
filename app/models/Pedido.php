@@ -1,5 +1,7 @@
 <?php
 require_once './Utilities/DateHelper.php';
+require_once 'C:\xampp\htdocs\La_Comanda\Views/pedidoDetalleCSV.php';
+
 class Pedido
 {
     public $id;
@@ -17,12 +19,14 @@ class Pedido
         try 
         {
             $objAccesoDatos = AccesoDatos::obtenerInstancia();
-            $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO pedidos (codigo, mesaId, nombreCliente, empleadoId, fecha) VALUES (:codigo, :mesaId, :nombreCliente, :empleadoId, :fecha)");
+            $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO pedidos (codigo, mesaId, nombreCliente, empleadoId, fecha, precio) VALUES (:codigo, :mesaId, :nombreCliente, :empleadoId, :fecha, :precio)");
             $consulta->bindValue(':codigo', $this->codigo, PDO::PARAM_STR);
             $consulta->bindValue(':mesaId', $this->mesaId, PDO::PARAM_INT);
             $consulta->bindValue(':nombreCliente', $this->nombreCliente, PDO::PARAM_STR);
             $consulta->bindValue(':empleadoId', $this->empleadoId, PDO::PARAM_INT);
             $consulta->bindValue(':fecha', DateHelper::DateAMD());
+            $consulta->bindValue(':precio', $this->precio, PDO::PARAM_INT);
+
             $consulta->execute();
 
             return $objAccesoDatos->obtenerUltimoId();
@@ -64,7 +68,7 @@ class Pedido
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
         $consulta = $objAccesoDatos->prepararConsulta("SELECT * FROM pedidos 
         
-        WHERE pedidoId = :pedidoId");
+        WHERE id = :pedidoId");
         $consulta->bindValue(':pedidoId', $pedidoId, PDO::PARAM_INT);
         $consulta->execute();
 
@@ -85,12 +89,12 @@ class Pedido
 
         try{
             $objAccesoDatos = AccesoDatos::obtenerInstancia();
-            $consulta = $objAccesoDatos->prepararConsulta("SELECT p.id, p.codigo as codigoPedido, m.codigo as codigoMesa, c.nombre, c.apellido, c.email as emailCliente, u.usuario as emailMozo, p.precio, p.fecha   FROM pedidos p
+            $consulta = $objAccesoDatos->prepararConsulta("SELECT p.id, p.codigo as codigoPedido, m.codigo as codigoMesa, u.usuario as emailMozo, p.precio, p.fecha, p.nombreCliente   FROM pedidos p
             INNER JOIN usuarios u on u.id = p.empleadoId
-            INNER JOIN clientes c on c.id = p.clienteId
             INNER JOIN mesas m on m.id = p.mesaId
             ORDER BY fecha");
             $consulta->execute();
+            
             return $consulta->fetchAll(PDO::FETCH_CLASS, 'PedidoDetalleCSV');
         }
         catch(PDOException $e)
@@ -100,7 +104,7 @@ class Pedido
     }
     
     
-    public  function ToPedido($mesaId, $empleadoId, $nombreCliente, $fecha)
+    public  function ToPedido($mesaId, $empleadoId, $nombreCliente, $fecha, $precio)
     {
         $permitted_chars = '0123456789abcdefghijklmnopqrstuvwxyz';
         $codigo = substr(str_shuffle($permitted_chars), 0, 5);
@@ -109,6 +113,7 @@ class Pedido
         $this->empleadoId = $empleadoId;
         $this->nombreCliente = $nombreCliente;
         $this->fecha = $fecha;
+        $this->$precio = $precio;
     }
 
     public function PedidoCompare($pedidoA, $pedidoB)
@@ -124,7 +129,6 @@ class Pedido
     public static function CargarPedidosCSV()
     {
        $listaPedidos =  Pedido::obtenerTodosDetalle();
-       
        return $listaPedidos;
 
     }

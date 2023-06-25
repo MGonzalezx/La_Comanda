@@ -97,6 +97,8 @@ class ProductoController extends Producto implements IApiUsable
       $parametros = $request->getParsedBody();
       $archivo = $_FILES['archivoCSV'];
 
+      
+
       try{
         $listaproductos = File::ReadFileCSV($archivo['tmp_name']);
       }
@@ -110,11 +112,15 @@ class ProductoController extends Producto implements IApiUsable
       for($i = 1; $i < count($listaproductos); $i++)
       {
 
+       
+
         $producto = new Producto();
         $producto->descripcion = $listaproductos[$i][0];
         $producto->tipoProductoId = ProductoTipoEnum::GetEnumerator($listaproductos[$i][1]);
         $producto->sectorId = SectorEnum::GetEnumerator($listaproductos[$i][2]);
         $producto->precio = $listaproductos[$i][3];
+
+        
 
          if(!$this->VerificarSiExisteProducto($producto))
         {

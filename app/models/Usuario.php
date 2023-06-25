@@ -8,18 +8,20 @@ class Usuario
     public $apellido;
     public $clave;
     public $tipoUsuarioId;
+    public $sector;
 
     public function crearUsuario()
     {
         try 
         {
             $objAccesoDatos = AccesoDatos::obtenerInstancia();
-            $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO usuarios (usuario, clave, nombre, apellido, tipoUsuarioId) VALUES (:usuario, :clave, :nombre, :apellido, :tipoUsuarioId)");
+            $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO usuarios (usuario, clave, nombre, apellido, tipoUsuarioId, sectorId) VALUES (:usuario, :clave, :nombre, :apellido, :tipoUsuarioId, :sectorId)");
             $claveHash = password_hash($this->clave, PASSWORD_DEFAULT);
             $consulta->bindValue(':usuario', $this->usuario, PDO::PARAM_STR);
             $consulta->bindValue(':nombre', $this->nombre, PDO::PARAM_STR);
             $consulta->bindValue(':apellido', $this->apellido, PDO::PARAM_STR);
             $consulta->bindValue(':tipoUsuarioId', $this->tipoUsuarioId, PDO::PARAM_INT);
+            $consulta->bindValue(':sectorId', $this->sector, PDO::PARAM_INT);
             $consulta->bindValue(':clave', $claveHash);
             $consulta->execute();
 
@@ -86,13 +88,14 @@ class Usuario
         return null;
     }
 
-    public  function ToUsuario($nombre, $apellido, $usuario, $clave, $tipo)
+    public  function ToUsuario($nombre, $apellido, $usuario, $clave, $tipo,$sector)
     {
         $this->usuario = $usuario;
         $this->nombre = $nombre;
         $this->apellido = $apellido;
         $this->clave = $clave;
         $this->tipoUsuarioId = $tipo;
+        $this->sector = $sector;
     }
 
     public function UsuarioCompare($usuarioA, $usuarioB)

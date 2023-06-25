@@ -13,7 +13,7 @@ class LoginController
       $parametros = $request->getParsedBody();
       $usuario = $parametros['usuario'];
       $clave = $parametros['clave'];
-      $fecha = DateHelper::DateAMD();
+      $fecha = DateHelper::FullDateHMS();
       
       $usuariofromDb =  Usuario::obtenerUsuarioPorUsuarioYClave($usuario, $clave);
        //var_dump($usuariofromDb);

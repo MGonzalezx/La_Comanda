@@ -5,6 +5,7 @@ require_once './models/DetallePedido.php';
 require_once './Utilities/EstadoPedidoDetalleEnum.php';
 require_once './Utilities/EstadoMesaEnum.php';
 require_once './Utilities/PerfilUsuarioEnum.php';
+require_once './Utilities/fileHelper.php';
 require_once '/xampp/htdocs/La_Comanda/Views/pedidoDashboardView.php';
 require_once '/xampp/htdocs/La_Comanda/Views/mozoPedidoView.php';
 
@@ -12,7 +13,7 @@ require_once '/xampp/htdocs/La_Comanda/Views/mozoPedidoView.php';
 
 class PedidoController extends Pedido implements IApiUsable
 {
-  public  $path = "cross/archivos/";
+  public  $path = "Utilities/archivos/";
     public function CargarUno($request, $response, $args)
     {
         date_default_timezone_set("America/Argentina/Buenos_Aires");
@@ -33,16 +34,8 @@ class PedidoController extends Pedido implements IApiUsable
 
         $pedido = new Pedido();
         $fecha = date("Y/m/d h:i:sa");
-        $pedido->ToPedido(intval($mesaId), intval($empleadoId), $nombreCliente, $fecha);
-        try
-        {
-          $ultimoIdFromPedido = $pedido->crearPedido();
-        }
-        catch(PDOException $e){
-          $error = json_encode(array("mensaje" => "Error al crear el pedido: ".$e->getMessage()));
-          $response->getBody()->write($error);
-          return $response;
-        }
+        $pedido->ToPedido(intval($mesaId), intval($empleadoId), $nombreCliente, $fecha, intval($pedido->precio));
+       
        
         $mensaje = "";
        
@@ -59,8 +52,19 @@ class PedidoController extends Pedido implements IApiUsable
             if($productoDb)
             {
              
-             var_dump($fecha); 
-              $pedido->precio = $pedido->precio + $productoDb->precio;
+             
+              $pedido->precio = $pedido->precio + $productoDb->precio * $cantidad;
+
+              try
+              {
+                $ultimoIdFromPedido = $pedido->crearPedido();
+              }
+              catch(PDOException $e){
+                $error = json_encode(array("mensaje" => "Error al crear el pedido: ".$e->getMessage()));
+                $response->getBody()->write($error);
+                return $response;
+              }
+
               $pedidoDetalle->ToDetallePedido(intval($ultimoIdFromPedido), intval($empleadoId) , $fecha, EstadoPedidoDetalleEnum::pendiente, intval($productoDb->id) , intval($cantidad) );
               try{
                 $pedidoDetalle->crearPedidoDetalle($pedidoDetalle);
@@ -300,13 +304,12 @@ class PedidoController extends Pedido implements IApiUsable
       $extension = ".csv"; 
       $listaPedidos = Pedido::CargarPedidosCSV();
       $arrayPedidos = [];
-      $header = array('ID', 'COD PEDIDO', 'COD MESA', 'CLIENTE', 'EMAIL', 'MOZO', 'PRECIO TOTAL', 'FECHA'); 
+    
+      $header = array('ID', 'COD PEDIDO', 'COD MESA', 'CLIENTE', 'MOZO', 'PRECIO TOTAL', 'FECHA'); 
       foreach($listaPedidos as $pedido)
-      {   $apellido = ($pedido->apellido && $pedido->apellido != null)? $pedido->apellido : "-";
-          $nombre = ($pedido->nombre && $pedido->nombre != null)? $pedido->nombre : "-";
-          $pedido->cliente = ($nombre != "-" && $apellido != "-")? $apellido.", ".$nombre: "-";
-          $lineData = array($pedido->id, $pedido->codigoPedido,  $pedido->codigoMesa, $pedido->cliente ,
-           $pedido->emailCliente, $pedido->emailMozo, $pedido->precioTotal, strval($pedido->fecha)); 
+      {   
+          $lineData = array($pedido->id, $pedido->codigoPedido,  $pedido->codigoMesa, 
+           $pedido->nombreCliente, $pedido->emailMozo, $pedido->precio, strval($pedido->fecha)); 
           array_push($arrayPedidos, $lineData);
       }
 
@@ -314,6 +317,22 @@ class PedidoController extends Pedido implements IApiUsable
       $mensaje = json_encode(array("mensaje" => "Descarga exitosa."));
           $response->getBody()->write($mensaje);
           return $response;
+    }
+
+    public function pedidosDetallesPorPedidoId($request, $response, $args)
+    {
+      $parametros = $request->getQueryParams();
+      //  $nombreCliente = $parametros['nombreCliente'];
+       $pedidoId = $parametros['pedidoId'];
+      $lista = DetallePedido::ObtenerFullDataPedidosDetalle($pedidoId);
+      foreach($lista as $detalle)
+      {
+        $detalle->estadoDetalle = EstadoPedidoDetalleEnum::GetDescription($detalle->estadoId);
+      }
+      $payload = json_encode(array("lista Pedidos" => $lista));
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
     }
 
 }

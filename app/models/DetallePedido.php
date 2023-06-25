@@ -1,4 +1,5 @@
 <?php
+require_once '/xampp/htdocs/La_Comanda/Views/detallePedidoDashboardView.php';
 class DetallePedido
 {
     public $id;

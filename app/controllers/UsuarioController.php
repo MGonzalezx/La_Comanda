@@ -12,9 +12,11 @@ class UsuarioController extends Usuario implements IApiUsable
         $nombre = $parametros['nombre'];
         $apellido = $parametros['apellido'];
         $tipo = $parametros['tipo'];
+        $sector = $parametros['sector'];
+
         $usr = new Usuario();
         
-        $usr->ToUsuario($nombre, $apellido, $usuario, $clave, $tipo);
+        $usr->ToUsuario($nombre, $apellido, $usuario, $clave, $tipo, $sector);
 
         //Checkeamos su usuario(es un email) si ya está registrado
         try
@@ -75,7 +77,7 @@ class UsuarioController extends Usuario implements IApiUsable
         foreach($lista as $usuario)
         {
           $usuarioNew= new Usuario();
-          $usuarioNew->ToUsuario( $usuario->nombre,  $usuario->apellido,  $usuario->usuario, null,  $usuario->tipoUsuarioId);
+          $usuarioNew->ToUsuario( $usuario->nombre,  $usuario->apellido,  $usuario->usuario, null,  $usuario->tipoUsuarioId, $usuario->sector);
           $usuarioNew->id = $usuario->id;
           array_push($sinclave, $usuarioNew);
         }
