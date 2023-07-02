@@ -74,6 +74,8 @@ class DetallePedido
         }
     }
 
+    
+
     //ver si  ponerle el estado  o  no al  filtro
     public static function ObtenerPedidosDetallePorSector($sectorId)
     {

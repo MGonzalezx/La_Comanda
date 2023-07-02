@@ -120,7 +120,7 @@ class PedidoController extends Pedido implements IApiUsable
     {
         $parametros = $request->getParsedBody();
         $detallePedidoId = $parametros['detallePedidoId'];
-        $estadoId = $parametros['estadoId'];
+        //$estadoId = $parametros['estadoId'];
         try{
           DetallePedido::ModificarEstado(EstadoPedidoDetalleEnum::listoParaServir, $detallePedidoId);
          }
@@ -333,6 +333,56 @@ class PedidoController extends Pedido implements IApiUsable
       $response->getBody()->write($payload);
       return $response
         ->withHeader('Content-Type', 'application/json');
+    }
+
+    public function DownloadPdf($request, $response, $args)
+    {
+      $parametros = $request->getQueryParams();
+       $pedidoId = $parametros['pedidoId'];
+       //$cliente = $parametros['nombreCliente'];
+
+      $pedidoCabecera = Pedido::obtenerParaRecidoPorPedidoId($pedidoId);
+      //$pedidoCabecera = Pedido::ObtenerParaRecidoPorPedidoCliente($cliente);
+    
+      $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false, true);
+      $pdf->addPage();
+      $pdf->write(0,"Pedidos:    ".$pedidoCabecera->codigoPedido."\n");
+      $pdf->write(1,"Mesa:     ".$pedidoCabecera->codigoMesa."\n");
+      $pdf->write(2, 'Precio total: '."$". $pedidoCabecera->precio."\n");
+
+      $detallesPedido = DetallePedido::ObtenerFullDataPedidosDetalle($pedidoId);
+      $datos = [];
+
+      if($pedidoCabecera &&  $detallesPedido)
+      { 
+        foreach($detallesPedido as $detalle)
+        {
+         
+          $val = "Producto: ".$detalle->descripcion."  -  Cantidad: ".$detalle->cantidad."  -  Precio: "."$".$detalle->cantidad * $detalle->precio."\n";
+          array_push($datos, $val);
+        }
+
+        $indicePdf = 3;
+        for ($i = 0; $i < count($datos) ; $i++)
+        {
+           
+            $pdf->write($indicePdf, $datos[$i]);
+            $indicePdf++;
+            
+        }
+        // Render and return pdf content as string
+        $content = $pdf->output('doc.pdf', 'S');
+
+        $response->getBody()->write($content);
+
+        $response = $response
+            ->withHeader('Content-Type', 'application/pdf')
+            ->withHeader('Content-Disposition', 'attachment; filename="filename.pdf"');
+
+        return $response;
+       }
+       
+       
     }
 
 }

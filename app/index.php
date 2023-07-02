@@ -71,6 +71,7 @@ $app->group('/pedidos', function (RouteCollectorProxy $group) {
   $group->post('[/]', \PedidoController::class . ':CargarUno') ->add(\ValidatorMW::class . ':CheckPerfilMozo')->add(\AuthTokenMW::class . ':AutenticarUsuario');
   
   $group->get('/descarga-csv', \PedidoController::class . ':DownloadCSV');
+  $group->get('/recibo-pdf', \PedidoController::class . ':DownloadPdf');
 
   $group->post('/tomar-pedido', \PedidoController::class . ':TomarPedidoDetalle')
     ->add(\ValidatorMW::class . ':CheckEmpleadosParaTomarPedido')->add(\AuthTokenMW::class . ':AutenticarUsuario');

@@ -1,6 +1,9 @@
 <?php
 require_once './Utilities/DateHelper.php';
 require_once 'C:\xampp\htdocs\La_Comanda\Views/pedidoDetalleCSV.php';
+require_once '/xampp/htdocs/La_Comanda//Views/Recibo.php';
+
+
 
 class Pedido
 {
@@ -133,6 +136,53 @@ class Pedido
 
     }
 
+    public static function ObtenerParaRecidoPorPedidoId($pedidoId)
+    {
+        $hoy = DateHelper::DateAMD();
+        // var_dump($hoy);
+        try{
+            $objAccesoDatos = AccesoDatos::obtenerInstancia();
+            $consulta = $objAccesoDatos->prepararConsulta(
+            "SELECT p.id, p.codigo as codigoPedido, m.codigo as codigoMesa, u.nombre, u.apellido, m.estado, p.empleadoId as mozoId, p.fecha , p.precio  FROM pedidos p
+            INNER JOIN usuarios u on u.id = p.empleadoId
+            INNER JOIN mesas m on m.id = p.mesaId
+            WHERE   p.id =:pedidoId
+            ORDER BY p.id, m.estado, p.fecha");
+
+            $consulta->bindValue(':pedidoId', $pedidoId);
+
+            $consulta->execute();
+            return $consulta->fetchObject('Recibo');
+        }
+        catch(PDOException $e)
+        {
+            throw $e;
+        }
+    }
+
+    public static function ObtenerParaRecidoPorPedidoCliente($cliente)
+    {
+        $hoy = DateHelper::DateAMD();
+        // var_dump($hoy);
+        try{
+            $objAccesoDatos = AccesoDatos::obtenerInstancia();
+            $consulta = $objAccesoDatos->prepararConsulta(
+            "SELECT p.id, p.codigo as codigoPedido, m.codigo as codigoMesa, u.nombre, u.apellido, m.estado, p.empleadoId as mozoId, p.fecha , p.precio  FROM pedidos p
+            INNER JOIN usuarios u on u.id = p.empleadoId
+            INNER JOIN mesas m on m.id = p.mesaId
+            WHERE   p.nombreCliente =:cliente
+            ORDER BY p.id, m.estado, p.fecha");
+
+            $consulta->bindValue(':cliente', $cliente);
+
+            $consulta->execute();
+            return $consulta->fetchObject('Recibo');
+        }
+        catch(PDOException $e)
+        {
+            throw $e;
+        }
+    }
     
 
     
